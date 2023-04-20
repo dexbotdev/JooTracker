@@ -1,8 +1,7 @@
 {
-  "name": "gridmantis-basic",
+  "name": "papertrader-basic",
   "version": "1.0.0",
   "private": true,
-  "proxy": "http://localhost:8080/",
   "scripts": {
     "start": "react-app-rewired start",
     "build": "react-app-rewired build",
