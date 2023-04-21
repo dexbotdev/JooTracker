@@ -18,11 +18,12 @@ const Tokenmanagement = () => {
   const PairConfig = Parse.Object.extend("PairConfig");
   const MyTrades = Parse.Object.extend("MyTrades");
   const [pairs, setPairs] = useState([])
+  const [tradesData, setTradesData] = useState([])
   const [subpairs, setSubpairs] = useState([])
   const [quote, setQuote] = useState(0.000);
   const [fdv, setFdv] = useState(0.000);
 
-  const [mytrades,setMytrades] = useState([]);
+  const [mytrades, setMytrades] = useState([]);
 
   const colorbadge = (record) => {
     if (record.networkName === 'ethereum') return 'info'
@@ -60,7 +61,7 @@ const Tokenmanagement = () => {
       sm: { span: 120 },
     },
   }
-  const columns = [
+  const columns = [ 
     {
       title: 'Network',
       dataIndex: 'networkName',
@@ -133,7 +134,7 @@ const Tokenmanagement = () => {
         },
         {
           text: 'Low',
-          value: 'low', 
+          value: 'low',
         }
       ],
       // specify the condition of filtering result
@@ -155,12 +156,80 @@ const Tokenmanagement = () => {
       key: 'quantity',
     },
     {
-      title: 'Invested Amnt',
+      title: 'Invested Amnt (in USD)',
       dataIndex: 'investedAmount',
       key: 'investedAmount',
     },
+
+    {
+      title: 'Statistics',
+      dataIndex: 'id',
+      key: 'id',
+      render: (text, record) => (
+        <span>
+          <div className="col-lg-12">
+            <div className={`${style.item}`}>
+              <span className={style.title}>Buy Price (usd) : &nbsp;&nbsp;&nbsp;&nbsp;</span>
+              <span className={style.title}>{record.buyPrice} </span>
+            </div>
+          </div>
+          <div className="col-lg-12">
+            <div className={`${style.item}`}>
+              <span className={style.title}>Sell Price (usd) : &nbsp;&nbsp;&nbsp;&nbsp;</span>
+              <span className={style.title}>{record.sellPrice} </span>
+            </div>
+          </div>
+          <div className="col-lg-12">
+            <div className={`${style.item}`}>
+              <span className={style.title}>Profit (usd) : &nbsp;&nbsp;&nbsp;&nbsp;</span>
+              <span className={style.title}>{calcProfit(record)} </span>
+            </div>
+          </div>
+        </span>
+      ),
+    },
+    {
+      title: 'Action',
+      render: (record) => 
+        {
+        record.sold===true ? ' ' :
+        <span>
+          <Button type="submit" onClick={() => sellToken(record)} className="btn btn-sm">
+            <small>
+              <i className="fe fe-trash mr-2" />
+            </small>
+            Sell
+          </Button>
+        </span>
+      }
+    },
   ]
 
+
+  const calcProfit = (record) => {
+
+    return record.sold ? `${Number(100 * (record.sellPrice - record.buyPrice) / record.buyPrice).toFixed(2)} %` : 'Not Sold';
+  }
+
+  const sellToken = async (record) => {
+    await axios.get(`https://api.dexscreener.com/latest/dex/search?q=${record.pairAddress}`).then((response) => {
+
+      console.log(response);
+      const price = response.data.pairs[0].priceUsd;
+
+      console.log(record.objectId)
+      const query = new Parse.Query(MyTrades);
+
+      const tradeUpdate = new MyTrades();
+      tradeUpdate.set("objectId", record.objectId);
+
+      tradeUpdate.set('sold', true);
+      tradeUpdate.set('sellPrice', price);
+      tradeUpdate.save(); 
+    }).then(async (response)=>{
+      await getPairsF(); 
+    })
+  }
   const toggleCentered = () => {
     setModalCentered(!modalCentered)
   }
@@ -178,8 +247,9 @@ const Tokenmanagement = () => {
     category: '',
     quantity: 0,
     tokenPrice: 0,
+    pairAddress: '',
   })
- 
+
 
   const handleChange = async (name, value) => {
     const fieldName = name
@@ -203,7 +273,7 @@ const Tokenmanagement = () => {
 
       console.log(value)
       console.log(currTokenList)
-      console.log(pairs) 
+      console.log(pairs)
       setSubpairs(currTokenList);
     }
 
@@ -215,6 +285,22 @@ const Tokenmanagement = () => {
         setQuote(price);
         setFdv(response.data.pairs[0].fdv);
 
+        const n = tokens;
+        tokens.forEach((data) => {
+          if (data.pairAddress === value) {
+            setformData((prevState) => ({
+              ...prevState,
+              'tokenSymbol': data.token0Symbol + data.token1Symbol
+            }))
+            setformData((prevState) => ({
+              ...prevState,
+              'pairAddress': value,
+            }))
+
+
+          }
+        })
+
       })
     }
 
@@ -223,43 +309,51 @@ const Tokenmanagement = () => {
   const getPairsF = async () => {
     const query = new Parse.Query(MyTrades);
     const results = await query.findAll();
-    const tokensDat = [];
 
+    const tradesDat = [];
     for (let i = 0; i < results.length; i++) {
       const pairConfig = results[i];
 
-       const acttokenSymbol = tokens.find(element => element.pairAddress ===pairConfig.get('tokenSymbol') );
-      const token = {
+      console.log(pairConfig.id)
+      const myTrade = {
+        objectId: pairConfig.id,
         networkName: pairConfig.get('networkName'),
-        tokenSymbol: acttokenSymbol.token0Symbol+acttokenSymbol.token1Symbol,
+        tokenSymbol: pairConfig.get('tokenSymbol'),
         category: pairConfig.get('category'),
         quantity: pairConfig.get('quantity'),
         quote: pairConfig.get('quote'),
         fdv: pairConfig.get('fdv'),
-        investedAmount: pairConfig.get('investedAmount')
+        investedAmount: pairConfig.get('investedAmount'),
+        buyPrice: pairConfig.get('buyPrice'),
+        sellPrice: pairConfig.get('sellPrice'),
+        sold: pairConfig.get('sold'),
+        pairAddress: pairConfig.get('pairAddress')
 
       }
 
-      tokensDat.push(token);
+      tradesDat.push(myTrade);
 
     }
 
-    setPairs(tokensDat);
+    setTradesData(tradesDat);
 
   }
-  
-  const saveData = async () => { 
+
+  const saveData = async () => {
 
     const pairConfig = new MyTrades();
     // define the attributes you want for your Object
     pairConfig.set('networkName', formData.networkName);
     pairConfig.set('tokenSymbol', formData.tokenSymbol);
-    pairConfig.set('pairAddress', formData.tokenSymbol);
+    pairConfig.set('pairAddress', formData.pairAddress);
     pairConfig.set('category', formData.category);
     pairConfig.set('quantity', formData.quantity);
-    pairConfig.set('quote', quote);
-    pairConfig.set('fdv', fdv); 
-    pairConfig.set('investedAmount', parseFloat(formData.quantity*quote)); 
+    pairConfig.set('buyPrice', quote);
+    pairConfig.set('sellPrice', null);
+    pairConfig.set('profit', 0);
+    pairConfig.set('sold', false);
+    pairConfig.set('fdv', fdv);
+    pairConfig.set('investedAmount', parseFloat(formData.quantity * quote));
     // save it on Back4App Data Store
     await pairConfig.save().then((created) => {
       console.log(created.id);
@@ -268,18 +362,18 @@ const Tokenmanagement = () => {
     });
     toggleCentered();
   }
- 
+
 
   useEffect(() => {
-   
-    const setPrelimsdata = async()=>{
+
+    const setPrelimsdata = async () => {
       const query = new Parse.Query(PairConfig);
       const results = await query.findAll();
       const tokensDat = [];
-  
+
       for (let i = 0; i < results.length; i++) {
         const pairConfig = results[i];
-  
+
         const token = {
           token0Symbol: pairConfig.get('token0Symbol'),
           token0Address: pairConfig.get('token0Address'),
@@ -291,16 +385,16 @@ const Tokenmanagement = () => {
           fdv: pairConfig.get('fdv'),
           pairAddress: pairConfig.get('pairAddress'),
         }
-  
+
         tokensDat.push(token);
-  
+
       }
-  
+
       setTokens(tokensDat);
-  
+
       const networksData = []
       const networksTest = []
-  
+
       results.forEach((data) => {
         if (!networksTest.includes(data.get('chainId'))) {
           networksData.push({ text: data.get('chainId'), value: data.get('chainId') });
@@ -308,16 +402,14 @@ const Tokenmanagement = () => {
         }
       })
       setNetworks(networksData);
-
-      if(tokens &&  tokens.length>0)
-        await getPairsF();
+      await getPairsF();
 
     }
 
 
     setPrelimsdata();
-    
-  }, [PairConfig,tokens])
+
+  }, [])
 
   return (
     <div>
@@ -338,7 +430,7 @@ const Tokenmanagement = () => {
                     className="btn btn-sm btn-info"
                     onClick={() => toggleCentered()}
                   >
-                    Add New
+                    Add New Trade
                   </Button>
                 </div>
               </div>
@@ -347,7 +439,7 @@ const Tokenmanagement = () => {
               <Table
                 columns={columns}
                 key="id"
-                dataSource={pairs}
+                dataSource={tradesData}
                 bordered
                 size="small"
                 pagination={{
@@ -421,14 +513,14 @@ const Tokenmanagement = () => {
                         onChange={(e) => handleChange('quantity', e.target.value)}
                         style={{ width: '100%' }}
                       />
-                    </Form.Item> 
+                    </Form.Item>
 
                     <div className="col-lg-12 mt-5 mb-15">
                       <div className={`${style.item} mb-xl-0 mb-15`}>
                         <span className={style.title}>Token Price (usd) : &nbsp;&nbsp;&nbsp;&nbsp;</span>
                         <span className={style.title}>{quote} </span>
                       </div>
-                    </div> 
+                    </div>
                     <Button
                       type="submit"
                       className="btn btn-info px-5"

@@ -105,16 +105,7 @@ const SearchAndAddPairs = () => {
   ]
 
   const deletePair = (record) => {
-    PairsService.deletePair(record).then((response) => {
-      console.log(response.data.code)
-      if (response.data.error) {
-        notification.error({
-          message: 'Error',
-          description: `Error :${response.data.error}`,
-        })
-      }
-      getPairs()
-    })
+     
   }
 
   const slippagesteps = {
