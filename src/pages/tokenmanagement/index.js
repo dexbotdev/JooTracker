@@ -61,7 +61,7 @@ const Tokenmanagement = () => {
       sm: { span: 120 },
     },
   }
-  const columns = [ 
+  const columns = [
     {
       title: 'Network',
       dataIndex: 'networkName',
@@ -190,25 +190,23 @@ const Tokenmanagement = () => {
     },
     {
       title: 'Action',
-      render: (record) => 
-        {
-        record.sold===true ? ' ' :
+      render: (record) => (
         <span>
-          <Button type="submit" onClick={() => sellToken(record)} className="btn btn-sm">
+          <Button type="submit" onClick={() => sellToken(record)} className="btn btn-danger btn-sm" disabled={record.sold}>
             <small>
               <i className="fe fe-trash mr-2" />
             </small>
             Sell
           </Button>
-        </span>
-      }
+        </span>)
+
     },
   ]
 
 
   const calcProfit = (record) => {
 
-    return record.sold ? `${Number(100 * (record.sellPrice - record.buyPrice) / record.buyPrice).toFixed(2)} %` : 'Not Sold';
+    return record.sold === true ? `${Number(100 * (record.sellPrice - record.buyPrice) / record.buyPrice).toFixed(2)} %` : 'Not Sold';
   }
 
   const sellToken = async (record) => {
@@ -225,9 +223,9 @@ const Tokenmanagement = () => {
 
       tradeUpdate.set('sold', true);
       tradeUpdate.set('sellPrice', price);
-      tradeUpdate.save(); 
-    }).then(async (response)=>{
-      await getPairsF(); 
+      tradeUpdate.save();
+    }).then(async (response) => {
+      await getPairsF();
     })
   }
   const toggleCentered = () => {
