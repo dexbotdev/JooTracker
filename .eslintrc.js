@@ -15,6 +15,7 @@ module.exports = {
       }
     ],
     "no-unused-vars":"off",
+    "no-unused-expressions":"off",
     'no-plusplus': 'off',
     "no-useless-escape": "off",
     "no-restricted-globals":"off",
