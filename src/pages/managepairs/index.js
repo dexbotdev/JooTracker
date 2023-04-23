@@ -155,6 +155,8 @@ const SearchAndAddPairs = () => {
   }
   
 
+
+
   useEffect(() => {
     const getPairsF = async () => {
       const query = new Parse.Query(PairConfig);
@@ -164,6 +166,7 @@ const SearchAndAddPairs = () => {
       for (let i = 0; i < results.length; i++) {
         const pairConfig = results[i];
 
+        
         const token = {
           token0Symbol: pairConfig.get('token0Symbol'),
           token0Address: pairConfig.get('token0Address'),
@@ -246,6 +249,8 @@ const SearchAndAddPairs = () => {
       setPairsMap([])
     }
   }
+
+
 
   return (
     <div>

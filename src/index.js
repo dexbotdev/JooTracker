@@ -13,10 +13,16 @@ import sagas from './redux/sagas'
 import Localization from './localization'
 import Router from './router'
 import * as serviceWorker from './serviceWorker'
-import Parse from 'parse/node';
-// mocking api
+ // mocking api
 import 'services/axios/fakeApi'
+import Parse from 'parse';
+import { initializeParse  } from '@parse/react';
 
+initializeParse(
+  'http://pt2.b4a.io', // e.g. YOUR_APP_NAME.b4a.io
+  'qZkw0r3HP50ZpZMAPO1iq2L9RMyhoDmwKhGkYD6K',
+  'ju0i3X5m41RJjZgM2GKf1QB4XWD80BOm8xI1mVoP'
+);
 // middlewared
 const history = createHashHistory()
 const sagaMiddleware = createSagaMiddleware()
@@ -27,10 +33,7 @@ const middlewares = [sagaMiddleware, routeMiddleware]
 // }
 const store = createStore(reducers(history), compose(applyMiddleware(...middlewares)))
 sagaMiddleware.run(sagas)
-
-Parse.initialize("oJytYzvQKkUFTmqiqXUH5ABDLoR59wVTkobJDVwa", "nW1KByk1gvijsxXpKbYYv7Encj36wLtyKLB6ltW1");
-Parse.serverURL = "https://parseapi.back4app.com/";
-
+ 
 ReactDOM.render(
   <Provider store={store}>
     <StylesLoader>

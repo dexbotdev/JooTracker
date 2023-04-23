@@ -7,9 +7,10 @@ import HeadersHeading from '@vb/widgets/Headers/Heading'
 import { Button, Modal, ModalHeader, ModalBody, ModalFooter, Badge } from 'reactstrap'
 import TokenService from 'services/TokenService'
 import LoadingOverlay from 'react-loading-overlay'
-import Parse from 'parse/node';
 import axios from 'axios'
 import style from '../license/info/style.module.scss'
+import Parse from 'parse';
+import { initializeParse, useParseQuery } from '@parse/react';
 
 const Tokenmanagement = () => {
   const [modalCentered, setModalCentered] = useState(false)
@@ -17,6 +18,18 @@ const Tokenmanagement = () => {
   const [tokens, setTokens] = useState()
   const PairConfig = Parse.Object.extend("PairConfig");
   const MyTrades = Parse.Object.extend("MyTrades");
+
+  const parseQuery = new Parse.Query('MyTrades');
+  const {
+    isLive,
+    isLoading,
+    isSyncing,
+    results,
+    count,
+    error,
+    reload
+  } = useParseQuery(parseQuery);
+
   const [pairs, setPairs] = useState([])
   const [tradesData, setTradesData] = useState([])
   const [subpairs, setSubpairs] = useState([])
@@ -175,6 +188,12 @@ const Tokenmanagement = () => {
           </div>
           <div className="col-lg-12">
             <div className={`${style.item}`}>
+              <span className={style.title}>Current Price (usd) : &nbsp;&nbsp;&nbsp;&nbsp;</span>
+              <span className={style.title}>{record.quote} </span>
+            </div>
+          </div>
+          <div className="col-lg-12">
+            <div className={`${style.item}`}>
               <span className={style.title}>Sell Price (usd) : &nbsp;&nbsp;&nbsp;&nbsp;</span>
               <span className={style.title}>{record.sellPrice} </span>
             </div>
@@ -212,10 +231,8 @@ const Tokenmanagement = () => {
   const sellToken = async (record) => {
     await axios.get(`https://api.dexscreener.com/latest/dex/search?q=${record.pairAddress}`).then((response) => {
 
-      console.log(response);
       const price = response.data.pairs[0].priceUsd;
 
-      console.log(record.objectId)
       const query = new Parse.Query(MyTrades);
 
       const tradeUpdate = new MyTrades();
@@ -246,6 +263,7 @@ const Tokenmanagement = () => {
     quantity: 0,
     tokenPrice: 0,
     pairAddress: '',
+    tokenAddress: ''
   })
 
 
@@ -269,9 +287,6 @@ const Tokenmanagement = () => {
         }
       })
 
-      console.log(value)
-      console.log(currTokenList)
-      console.log(pairs)
       setSubpairs(currTokenList);
     }
 
@@ -294,6 +309,10 @@ const Tokenmanagement = () => {
               ...prevState,
               'pairAddress': value,
             }))
+            setformData((prevState) => ({
+              ...prevState,
+              'tokenAddress': data.token0Address,
+            }))
 
 
           }
@@ -304,36 +323,41 @@ const Tokenmanagement = () => {
 
   }
 
-  const getPairsF = async () => {
-    const query = new Parse.Query(MyTrades);
-    const results = await query.findAll();
+  const getPairsF = async () => { 
+    const trades = [];
 
-    const tradesDat = [];
+    if(results)
     for (let i = 0; i < results.length; i++) {
       const pairConfig = results[i];
 
       console.log(pairConfig.id)
+
+      const pairAddress = pairConfig.get('pairAddress')
+      const chainName = pairConfig.get('networkName')
+      const priceUsd = 0.00;
+
       const myTrade = {
         objectId: pairConfig.id,
         networkName: pairConfig.get('networkName'),
         tokenSymbol: pairConfig.get('tokenSymbol'),
         category: pairConfig.get('category'),
         quantity: pairConfig.get('quantity'),
-        quote: pairConfig.get('quote'),
+        quote: pairConfig.get('quote'), 
         fdv: pairConfig.get('fdv'),
         investedAmount: pairConfig.get('investedAmount'),
         buyPrice: pairConfig.get('buyPrice'),
         sellPrice: pairConfig.get('sellPrice'),
         sold: pairConfig.get('sold'),
-        pairAddress: pairConfig.get('pairAddress')
-
+        pairAddress: pairConfig.get('pairAddress'),
+        tokenAddress: pairConfig.get('tokenAddress'), 
       }
 
-      tradesDat.push(myTrade);
+      trades.push(myTrade);
 
     }
 
-    setTradesData(tradesDat);
+    setTradesData(trades);
+
 
   }
 
@@ -346,7 +370,9 @@ const Tokenmanagement = () => {
     pairConfig.set('pairAddress', formData.pairAddress);
     pairConfig.set('category', formData.category);
     pairConfig.set('quantity', formData.quantity);
+    pairConfig.set('tokenAddress', formData.tokenAddress);
     pairConfig.set('buyPrice', quote);
+    pairConfig.set('quote', quote);
     pairConfig.set('sellPrice', null);
     pairConfig.set('profit', 0);
     pairConfig.set('sold', false);
@@ -355,8 +381,6 @@ const Tokenmanagement = () => {
     // save it on Back4App Data Store
     await pairConfig.save().then((created) => {
       console.log(created.id);
-    }, (error) => {
-      console.log(error);
     });
     toggleCentered();
   }
@@ -366,11 +390,11 @@ const Tokenmanagement = () => {
 
     const setPrelimsdata = async () => {
       const query = new Parse.Query(PairConfig);
-      const results = await query.findAll();
+      const queryresults = await query.findAll();
       const tokensDat = [];
 
-      for (let i = 0; i < results.length; i++) {
-        const pairConfig = results[i];
+      for (let i = 0; i < queryresults.length; i++) {
+        const pairConfig = queryresults[i];
 
         const token = {
           token0Symbol: pairConfig.get('token0Symbol'),
@@ -393,7 +417,7 @@ const Tokenmanagement = () => {
       const networksData = []
       const networksTest = []
 
-      results.forEach((data) => {
+      queryresults.forEach((data) => {
         if (!networksTest.includes(data.get('chainId'))) {
           networksData.push({ text: data.get('chainId'), value: data.get('chainId') });
           networksTest.push(data.get('chainId'));
@@ -404,10 +428,14 @@ const Tokenmanagement = () => {
 
     }
 
-
     setPrelimsdata();
+  }, [results])
 
-  }, [])
+
+
+
+
+
 
   return (
     <div>

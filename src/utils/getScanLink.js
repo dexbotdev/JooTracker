@@ -1,3 +1,5 @@
+ import chains from "./constants";
+ 
  const getScanLink = (networkname, tnxHash) => {
 
 
@@ -18,6 +20,11 @@
 
     }
 
+}
+
+export const getChainId=(chainName)=>{ 
+    const chainRecord = chains.find((chain) => chain.name === chainName); 
+    return chainRecord.chain_id; 
 }
 
 export default getScanLink;
