@@ -11,8 +11,14 @@ import { Button, Modal, ModalHeader, ModalBody, Badge } from 'reactstrap'
 import classnames from 'classnames'
 import { Link, withRouter } from 'react-router-dom'
 import style from './6/style.module.scss'
-import Parse from 'parse/node';
+import Parse from 'parse';
+import { initializeParse  } from '@parse/react';
 
+initializeParse(
+  'https://pt2.b4a.io', // e.g. YOUR_APP_NAME.b4a.io
+  'qZkw0r3HP50ZpZMAPO1iq2L9RMyhoDmwKhGkYD6K',
+  'ju0i3X5m41RJjZgM2GKf1QB4XWD80BOm8xI1mVoP'
+);
 const { Search, TextArea } = Input
 const formItemLayout = {
   labelCol: {
