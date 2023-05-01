@@ -11,14 +11,14 @@ import { Button, Modal, ModalHeader, ModalBody, Badge } from 'reactstrap'
 import classnames from 'classnames'
 import { Link, withRouter } from 'react-router-dom'
 import style from './6/style.module.scss'
-import Parse from 'parse';
-import { initializeParse  } from '@parse/react';
+import Parse from 'parse'
+import { initializeParse } from '@parse/react'
 
 initializeParse(
   'https://pt2.b4a.io', // e.g. YOUR_APP_NAME.b4a.io
   'qZkw0r3HP50ZpZMAPO1iq2L9RMyhoDmwKhGkYD6K',
-  'ju0i3X5m41RJjZgM2GKf1QB4XWD80BOm8xI1mVoP'
-);
+  'ju0i3X5m41RJjZgM2GKf1QB4XWD80BOm8xI1mVoP',
+)
 const { Search, TextArea } = Input
 const formItemLayout = {
   labelCol: {
@@ -39,9 +39,7 @@ const SearchAndAddPairs = () => {
   const [searchValue, setSearchValue] = useState('')
   const [pairsMap, setPairsMap] = useState([])
 
-
-
-  const PairConfig = Parse.Object.extend("PairConfig");
+  const PairConfig = Parse.Object.extend('PairConfig')
 
   const colorbadge = (record) => {
     if (record.chainId === 'ethereum') return 'dark'
@@ -50,7 +48,6 @@ const SearchAndAddPairs = () => {
 
     if (record.chainId === 'polygon') return 'primary'
     if (record.chainId === 'arbitrum') return 'danger'
-
 
     return 'info'
   }
@@ -62,7 +59,6 @@ const SearchAndAddPairs = () => {
 
     if (record.chainId === 'polygon') return 'primary'
     if (record.chainId === 'arbitrum') return 'danger'
-
 
     return 'info'
   }
@@ -87,7 +83,8 @@ const SearchAndAddPairs = () => {
       render: (text, record) => (
         <span>
           <Badge color={colorbadge(record)} style={{ fontWeight: 'bolder', fontSize: '14px' }}>
-            {record.token0Symbol}{record.token1Symbol}
+            {record.token0Symbol}
+            {record.token1Symbol}
           </Badge>
           <br />
           <Badge className="mb-0" style={{ fontWeight: 'bolder' }}>
@@ -108,10 +105,34 @@ const SearchAndAddPairs = () => {
       key: 'fdv',
       render: (text, record) => <span>{record.fdv}</span>,
     },
+    {
+      title: 'Action',
+      render: (record) => (
+        <span>
+          <Button
+            type="submit"
+            onClick={() => deletePair(record)}
+            className="btn btn-danger btn-sm"
+          >
+            <small>
+              <i className="fe fe-trash mr-2" />
+            </small>
+            Delete
+          </Button>
+        </span>
+      ),
+    },
   ]
 
   const deletePair = (record) => {
-     
+    const tradeUpdate = new PairConfig()
+    tradeUpdate.set('objectId', record.objectId)
+    tradeUpdate.destroy().then(
+      (myObject) => {
+        getPairs()
+      },
+      (error) => {},
+    )
   }
 
   const slippagesteps = {
@@ -129,17 +150,17 @@ const SearchAndAddPairs = () => {
     slippage: '50',
     address: '',
   })
- 
-  
+
   const getPairs = async () => {
-    const query = new Parse.Query(PairConfig);
-    const results = await query.findAll();
-    const tokensDat = [];
+    const query = new Parse.Query(PairConfig)
+    const results = await query.findAll()
+    const tokensDat = []
 
     for (let i = 0; i < results.length; i++) {
-      const pairConfig = results[i];
+      const pairConfig = results[i]
 
       const token = {
+        objectId: pairConfig.id,
         token0Symbol: pairConfig.get('token0Symbol'),
         token0Address: pairConfig.get('token0Address'),
         token1Symbol: pairConfig.get('token1Symbol'),
@@ -148,32 +169,26 @@ const SearchAndAddPairs = () => {
         chainId: pairConfig.get('chainId'),
         liquidity: pairConfig.get('liquidity'),
         fdv: pairConfig.get('fdv'),
-        pairAddress:pairConfig.get('pairAddress')
-
+        pairAddress: pairConfig.get('pairAddress'),
       }
 
-      tokensDat.push(token);
-
+      tokensDat.push(token)
     }
 
-    setPairs(tokensDat);
-
+    setPairs(tokensDat)
   }
-  
-
-
 
   useEffect(() => {
     const getPairsF = async () => {
-      const query = new Parse.Query(PairConfig);
-      const results = await query.findAll();
-      const tokensDat = [];
+      const query = new Parse.Query(PairConfig)
+      const results = await query.findAll()
+      const tokensDat = []
 
       for (let i = 0; i < results.length; i++) {
-        const pairConfig = results[i];
+        const pairConfig = results[i]
 
-        
         const token = {
+          objectId: pairConfig.id,
           token0Symbol: pairConfig.get('token0Symbol'),
           token0Address: pairConfig.get('token0Address'),
           token1Symbol: pairConfig.get('token1Symbol'),
@@ -182,21 +197,16 @@ const SearchAndAddPairs = () => {
           chainId: pairConfig.get('chainId'),
           liquidity: pairConfig.get('liquidity'),
           fdv: pairConfig.get('fdv'),
-          pairAddress:pairConfig.get('pairAddress')
-
+          pairAddress: pairConfig.get('pairAddress'),
         }
 
-        tokensDat.push(token);
-
+        tokensDat.push(token)
       }
 
-      setPairs(tokensDat);
-
+      setPairs(tokensDat)
     }
 
     getPairsF()
-
-
   }, [PairConfig])
 
   const addNewPair = async (record) => {
@@ -209,29 +219,31 @@ const SearchAndAddPairs = () => {
       chainId: record.chainId,
       liquidity: record.liquidity.quote,
       fdv: record.fdv,
-      pairAddress:record.pairAddress
+      pairAddress: record.pairAddress,
     }
 
     setIsActive(true)
-    const pairConfig = new PairConfig();
+    const pairConfig = new PairConfig()
     // define the attributes you want for your Object
-    pairConfig.set('token0Symbol', record.baseToken.symbol);
-    pairConfig.set('token0Address', record.baseToken.address);
-    pairConfig.set('token1Symbol', record.quoteToken.symbol);
-    pairConfig.set('token1Address', record.quoteToken.address);
-    pairConfig.set('dexId', record.dexId);
-    pairConfig.set('chainId', record.chainId);
-    pairConfig.set('liquidity', record.liquidity.quote);
-    pairConfig.set('fdv', record.fdv);
-    pairConfig.set('pairAddress', record.pairAddress);
-    pairConfig.set('tokenSymbol', record.baseToken.symbol+record.quoteToken.symbol);
+    pairConfig.set('token0Symbol', record.baseToken.symbol)
+    pairConfig.set('token0Address', record.baseToken.address)
+    pairConfig.set('token1Symbol', record.quoteToken.symbol)
+    pairConfig.set('token1Address', record.quoteToken.address)
+    pairConfig.set('dexId', record.dexId)
+    pairConfig.set('chainId', record.chainId)
+    pairConfig.set('liquidity', record.liquidity.quote)
+    pairConfig.set('fdv', record.fdv)
+    pairConfig.set('pairAddress', record.pairAddress)
+    pairConfig.set('tokenSymbol', record.baseToken.symbol + record.quoteToken.symbol)
     // save it on Back4App Data Store
-    await pairConfig.save().then((created) => {
-      console.log(created.id);
-    }, (error) => {
-      console.log(error);
-    });
-
+    await pairConfig.save().then(
+      (created) => {
+        console.log(created.id)
+      },
+      (error) => {
+        console.log(error)
+      },
+    )
 
     setIsActive(false)
     getPairs()
@@ -242,11 +254,10 @@ const SearchAndAddPairs = () => {
     if (txt.length >= 3) {
       setIsActive(true)
       await axios.get(`https://api.dexscreener.com/latest/dex/search?q=${txt}`).then((response) => {
+        const pairsmap = []
 
-        const pairsmap = [];
-
-        response.data.pairs.forEach((pairItem)=>{
-          if(pairItem.dexId ==='uniswap') pairsmap.push(pairItem);
+        response.data.pairs.forEach((pairItem) => {
+          if (pairItem.dexId === 'uniswap') pairsmap.push(pairItem)
         })
         setPairsMap(pairsmap)
         setIsActive(false)
@@ -255,8 +266,6 @@ const SearchAndAddPairs = () => {
       setPairsMap([])
     }
   }
-
-
 
   return (
     <div>

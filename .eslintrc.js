@@ -1,8 +1,6 @@
 module.exports = {
   "extends": [
-    "react-app",
-    "airbnb",
-    "prettier"
+    "react-app",  
   ],
   "rules": {
     "react/jsx-filename-extension": [
