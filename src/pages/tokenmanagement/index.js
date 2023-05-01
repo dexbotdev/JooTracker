@@ -164,6 +164,7 @@ const Tokenmanagement = () => {
       title: 'Invested Amnt (in USD)',
       dataIndex: 'investedAmount',
       key: 'investedAmount',
+      render: (text, record) => <span>{record.investedAmount}</span>,
     },
 
     {
@@ -366,7 +367,7 @@ const Tokenmanagement = () => {
     pairConfig.set('tokenSymbol', formData.tokenSymbol)
     pairConfig.set('pairAddress', formData.pairAddress)
     pairConfig.set('category', formData.category)
-    pairConfig.set('quantity', formData.quantity)
+    pairConfig.set('quantity', '' + Number(formData.investedAmount / quote))
     pairConfig.set('tokenAddress', formData.tokenAddress)
     pairConfig.set('buyPrice', quote)
     pairConfig.set('quote', quote)
@@ -374,7 +375,7 @@ const Tokenmanagement = () => {
     pairConfig.set('profit', 0)
     pairConfig.set('sold', false)
     pairConfig.set('fdv', fdv)
-    pairConfig.set('investedAmount', parseFloat(formData.quantity * quote))
+    pairConfig.set('investedAmount', parseFloat(formData.investedAmount))
     // save it on Back4App Data Store
     await pairConfig.save().then((created) => {
       console.log(created.id)
@@ -520,11 +521,11 @@ const Tokenmanagement = () => {
                           ))}
                       </Select>
                     </Form.Item>
-                    <Form.Item name="quantity" label="Token Quantity *">
+                    <Form.Item name="investedAmount" label="Invested Amount *">
                       <Input
-                        placeholder="Token Quantity"
-                        name="quantity"
-                        onChange={(e) => handleChange('quantity', e.target.value)}
+                        placeholder="Invested Amount"
+                        name="investedAmount"
+                        onChange={(e) => handleChange('investedAmount', e.target.value)}
                         style={{ width: '100%' }}
                       />
                     </Form.Item>
