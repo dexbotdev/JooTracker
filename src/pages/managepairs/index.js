@@ -15,9 +15,9 @@ import Parse from 'parse'
 import { initializeParse } from '@parse/react'
 
 initializeParse(
-  'https://pt2.b4a.io', // e.g. YOUR_APP_NAME.b4a.io
-  'qZkw0r3HP50ZpZMAPO1iq2L9RMyhoDmwKhGkYD6K',
-  'ju0i3X5m41RJjZgM2GKf1QB4XWD80BOm8xI1mVoP',
+  'https://pt3.b4a.io/', // e.g. YOUR_APP_NAME.b4a.io
+  'EjOopvf32TxOBNafKLhHC50tvp6AGPms9b3QGNV2',
+  'jtFWiFHOxNmb8zujKIFJtwj0UgZTLeRofqj8WCza',
 )
 const { Search, TextArea } = Input
 const formItemLayout = {
