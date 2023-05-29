@@ -16,12 +16,7 @@
     "vb": "node ./scripts/vb.js",
     "vb-full": "REDIRECT_URL=/dashboard/alpha node ./scripts/generate.js --config=config-full.json",
     "vb-seed": "node ./scripts/generate.js --config=config-seed.json"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run lint-staged"
-    }
-  },
+  }, 
   "lint-staged": {
     "src/**/*.{js,jsx,ts,tsx,scss,less}": [
       "prettier --write",
