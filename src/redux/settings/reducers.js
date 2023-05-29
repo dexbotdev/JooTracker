@@ -15,7 +15,7 @@ const initialState = {
     // Read docs for available values: https://docs.visualbuilder.cloud
     // VB:REPLACE-START:SETTINGS
     authProvider: 'jwt',
-    logo: 'PaperTrader',
+    logo: 'JooTracker',
     version: 'V1',
     theme: 'dark',
     locale: 'en-US',

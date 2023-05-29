@@ -13,13 +13,11 @@ import Parse from 'parse'
 import { initializeParse, useParseQuery } from '@parse/react'
 
 const Tokenmanagement = () => {
-  const [modalCentered, setModalCentered] = useState(false)
   const [networks, setNetworks] = useState()
   const [tokens, setTokens] = useState()
-  const PairConfig = Parse.Object.extend('PairConfig')
-  const MyTrades = Parse.Object.extend('MyTrades')
+  const MyTrades = Parse.Object.extend('TokenTracker')
 
-  const parseQuery = new Parse.Query('MyTrades')
+  const parseQuery = new Parse.Query('TokenTracker')
   const { results } = useParseQuery(parseQuery)
 
   const [pairs, setPairs] = useState([])
@@ -68,44 +66,6 @@ const Tokenmanagement = () => {
   }
   const columns = [
     {
-      title: 'Network',
-      dataIndex: 'networkName',
-      key: 'networkName',
-
-      maxLength: 15,
-
-      filters: [
-        {
-          text: 'Ethereum',
-          value: 'ethereum',
-        },
-        {
-          text: 'Binance',
-          value: 'bsc',
-        },
-        {
-          text: 'Arbitrum',
-          value: 'arbitrum',
-        },
-        {
-          text: 'Polygon',
-          value: 'polygon',
-        },
-      ],
-      // specify the condition of filtering result
-      // here is that finding the name started with `value`
-      onFilter: (value, record) => record.chainId === value,
-      sorter: (a, b) => a.chainId.length - b.chainId.length,
-      sortDirections: ['descend'],
-      render: (text, record) => (
-        <span>
-          <Badge color={colorbadge(record)} style={{ fontWeight: 'bolder' }}>
-            {record.networkName}
-          </Badge>
-        </span>
-      ),
-    },
-    {
       title: 'Symbol',
       dataIndex: 'tokenSymbol',
       key: 'tokenSymbol',
@@ -119,54 +79,9 @@ const Tokenmanagement = () => {
     },
     {
       title: 'Marketcap',
-      dataIndex: 'fdv',
-      key: 'fdv',
+      dataIndex: 'currmarketcap',
+      key: 'currmarketcap',
     },
-    {
-      title: 'Category',
-      dataIndex: 'category',
-      key: 'category',
-      maxLength: 15,
-
-      filters: [
-        {
-          text: 'High',
-          value: 'high',
-        },
-        {
-          text: 'Medium',
-          value: 'med',
-        },
-        {
-          text: 'Low',
-          value: 'low',
-        },
-      ],
-      // specify the condition of filtering result
-      // here is that finding the name started with `value`
-      onFilter: (value, record) => record.category === value,
-      sorter: (a, b) => a.category.length - b.category.length,
-      sortDirections: ['descend'],
-      render: (text, record) => (
-        <span>
-          <Badge color={colorbadge(record)} style={{ fontWeight: 'bolder' }}>
-            {record.category}
-          </Badge>
-        </span>
-      ),
-    },
-    {
-      title: 'Quantity',
-      dataIndex: 'quantity',
-      key: 'quantity',
-    },
-    {
-      title: 'Invested Amnt (in USD)',
-      dataIndex: 'investedAmount',
-      key: 'investedAmount',
-      render: (text, record) => <span>{record.investedAmount}</span>,
-    },
-
     {
       title: 'Statistics',
       dataIndex: 'id',
@@ -175,20 +90,14 @@ const Tokenmanagement = () => {
         <span>
           <div className="col-lg-12">
             <div className={`${style.item}`}>
-              <span className={style.title}>Buy Price (usd) : &nbsp;&nbsp;&nbsp;&nbsp;</span>
-              <span className={style.title}>{record.buyPrice} </span>
+              <span className={style.title}>Launch Price (usd) : &nbsp;&nbsp;&nbsp;&nbsp;</span>
+              <span className={style.title}>{record.priceUsd} </span>
             </div>
           </div>
           <div className="col-lg-12">
             <div className={`${style.item}`}>
               <span className={style.title}>Current Price (usd) : &nbsp;&nbsp;&nbsp;&nbsp;</span>
-              <span className={style.title}>{record.quote} </span>
-            </div>
-          </div>
-          <div className="col-lg-12">
-            <div className={`${style.item}`}>
-              <span className={style.title}>Sell Price (usd) : &nbsp;&nbsp;&nbsp;&nbsp;</span>
-              <span className={style.title}>{record.sellPrice} </span>
+              <span className={style.title}>{record.currPrice} </span>
             </div>
           </div>
           <div className="col-lg-12">
@@ -204,17 +113,6 @@ const Tokenmanagement = () => {
       title: 'Action',
       render: (record) => (
         <span>
-          <Button
-            type="submit"
-            onClick={() => sellToken(record)}
-            className="btn btn-danger btn-sm"
-            disabled={record.sold}
-          >
-            <small>
-              <i className="fe fe-trash mr-2" />
-            </small>
-            Sell
-          </Button>
           <Button
             type="submit"
             onClick={() => deleteTrade(record)}
@@ -242,30 +140,9 @@ const Tokenmanagement = () => {
   }
 
   const calcProfit = (record) => {
-    return record.sold === true
-      ? `${Number((100 * (record.sellPrice - record.buyPrice)) / record.buyPrice).toFixed(2)} %`
+    return record.track === true
+      ? `${Number(record.currPrice / record.priceUsd).toFixed(2)} X`
       : 'Not Sold'
-  }
-
-  const sellToken = async (record) => {
-    await axios
-      .get(`https://api.dexscreener.com/latest/dex/search?q=${record.pairAddress}`)
-      .then((response) => {
-        const price = response.data.pairs[0].priceUsd
-
-        const tradeUpdate = new MyTrades()
-        tradeUpdate.set('objectId', record.objectId)
-
-        tradeUpdate.set('sold', true)
-        tradeUpdate.set('sellPrice', price)
-        tradeUpdate.save()
-      })
-      .then(async () => {
-        await getPairsF()
-      })
-  }
-  const toggleCentered = () => {
-    setModalCentered(!modalCentered)
   }
 
   const [formData, setformData] = useState({
@@ -279,56 +156,6 @@ const Tokenmanagement = () => {
     tokenAddress: '',
   })
 
-  const handleChange = async (name, value) => {
-    const fieldName = name
-    const fieldValue = value
-    setformData((prevState) => ({
-      ...prevState,
-      [fieldName]: fieldValue,
-    }))
-
-    if (fieldName === 'networkName') {
-      const currTokenList = []
-      setSubpairs(currTokenList)
-
-      tokens.forEach((data) => {
-        if (data.chainId === value) {
-          currTokenList.push(data)
-        }
-      })
-
-      setSubpairs(currTokenList)
-    }
-
-    if (fieldName === 'tokenSymbol') {
-      await axios
-        .get(`https://api.dexscreener.com/latest/dex/search?q=${value}`)
-        .then((response) => {
-          console.log(response)
-          const price = response.data.pairs[0].priceUsd
-          setQuote(price)
-          setFdv(response.data.pairs[0].fdv)
-
-          tokens.forEach((data) => {
-            if (data.pairAddress === value) {
-              setformData((prevState) => ({
-                ...prevState,
-                tokenSymbol: data.token0Symbol + data.token1Symbol,
-              }))
-              setformData((prevState) => ({
-                ...prevState,
-                pairAddress: value,
-              }))
-              setformData((prevState) => ({
-                ...prevState,
-                tokenAddress: data.token0Address,
-              }))
-            }
-          })
-        })
-    }
-  }
-
   const getPairsF = async () => {
     const trades = []
 
@@ -338,87 +165,16 @@ const Tokenmanagement = () => {
 
         console.log(pairConfig.id)
 
-        const myTrade = {
-          objectId: pairConfig.id,
-          networkName: pairConfig.get('networkName'),
-          tokenSymbol: pairConfig.get('tokenSymbol'),
-          category: pairConfig.get('category'),
-          quantity: pairConfig.get('quantity'),
-          quote: pairConfig.get('quote'),
-          fdv: pairConfig.get('fdv'),
-          investedAmount: pairConfig.get('investedAmount'),
-          buyPrice: pairConfig.get('buyPrice'),
-          sellPrice: pairConfig.get('sellPrice'),
-          sold: pairConfig.get('sold'),
-          pairAddress: pairConfig.get('pairAddress'),
-          tokenAddress: pairConfig.get('tokenAddress'),
-        }
+        const myTrade = results[i].toJSON()
 
-        trades.push(myTrade)
+        if (pairConfig.get('track') === true) trades.push(myTrade)
       }
 
     setTradesData(trades)
   }
 
-  const saveData = async () => {
-    const pairConfig = new MyTrades()
-    // define the attributes you want for your Object
-    pairConfig.set('networkName', formData.networkName)
-    pairConfig.set('tokenSymbol', formData.tokenSymbol)
-    pairConfig.set('pairAddress', formData.pairAddress)
-    pairConfig.set('category', formData.category)
-    pairConfig.set('quantity', '' + Number(formData.investedAmount / quote))
-    pairConfig.set('tokenAddress', formData.tokenAddress)
-    pairConfig.set('buyPrice', quote)
-    pairConfig.set('quote', quote)
-    pairConfig.set('sellPrice', null)
-    pairConfig.set('profit', 0)
-    pairConfig.set('sold', false)
-    pairConfig.set('fdv', fdv)
-    pairConfig.set('investedAmount', parseFloat(formData.investedAmount))
-    // save it on Back4App Data Store
-    await pairConfig.save().then((created) => {
-      console.log(created.id)
-    })
-    toggleCentered()
-  }
-
   useEffect(() => {
     const setPrelimsdata = async () => {
-      const query = new Parse.Query(PairConfig)
-      const queryresults = await query.findAll()
-      const tokensDat = []
-
-      for (let i = 0; i < queryresults.length; i++) {
-        const pairConfig = queryresults[i]
-
-        const token = {
-          token0Symbol: pairConfig.get('token0Symbol'),
-          token0Address: pairConfig.get('token0Address'),
-          token1Symbol: pairConfig.get('token1Symbol'),
-          token1Address: pairConfig.get('token1Address'),
-          dexId: pairConfig.get('dexId'),
-          chainId: pairConfig.get('chainId'),
-          liquidity: pairConfig.get('liquidity'),
-          fdv: pairConfig.get('fdv'),
-          pairAddress: pairConfig.get('pairAddress'),
-        }
-
-        tokensDat.push(token)
-      }
-
-      setTokens(tokensDat)
-
-      const networksData = []
-      const networksTest = []
-
-      queryresults.forEach((data) => {
-        if (!networksTest.includes(data.get('chainId'))) {
-          networksData.push({ text: data.get('chainId'), value: data.get('chainId') })
-          networksTest.push(data.get('chainId'))
-        }
-      })
-      setNetworks(networksData)
       await getPairsF()
     }
 
@@ -438,15 +194,6 @@ const Tokenmanagement = () => {
                     <strong>My Portfolio</strong>
                   </h5>
                 </div>
-                <div>
-                  <Button
-                    type="submit"
-                    className="btn btn-sm btn-info"
-                    onClick={() => toggleCentered()}
-                  >
-                    Add New Trade
-                  </Button>
-                </div>
               </div>
             </div>
             <div className="responsive-table">
@@ -461,90 +208,6 @@ const Tokenmanagement = () => {
                 }}
               />
             </div>
-            <Modal isOpen={modalCentered} toggle={toggleCentered} className="card">
-              <ModalHeader toggle={() => toggleCentered()}>Add new Trade</ModalHeader>
-              <ModalBody>
-                <div className="card-body">
-                  <Form {...formItemLayout} labelAlign="right">
-                    <Form.Item name="network" label="Network *">
-                      <Select
-                        size="default"
-                        placeholder="Select Network"
-                        name="networkName"
-                        required
-                        value={formData.networkName ? formData.networkName : ''}
-                        onChange={(value) => handleChange('networkName', value)}
-                        style={{ width: '100%' }}
-                      >
-                        {networks &&
-                          networks.map((option) => (
-                            <Select.Option key={option.text} value={option.text}>
-                              {option.value}
-                            </Select.Option>
-                          ))}
-                      </Select>
-                    </Form.Item>
-                    <Form.Item name="token" label="Symbol/Pair *">
-                      <Select
-                        size="default"
-                        placeholder="Select Symbol"
-                        name="tokenSymbol"
-                        required
-                        value={formData.tokenSymbol ? formData.tokenSymbol : ''}
-                        onChange={(value) => handleChange('tokenSymbol', value)}
-                        style={{ width: '100%' }}
-                      >
-                        {subpairs &&
-                          subpairs.map((option) => (
-                            <Select.Option key={option.pairAddress} value={option.pairAddress}>
-                              {option.token0Symbol}
-                              {option.token1Symbol}
-                            </Select.Option>
-                          ))}
-                      </Select>
-                    </Form.Item>
-                    <Form.Item name="category" label="Category *">
-                      <Select
-                        size="default"
-                        placeholder="Select Category"
-                        name="category"
-                        required
-                        value={formData.category ? formData.category : ''}
-                        onChange={(value) => handleChange('category', value)}
-                        style={{ width: '100%' }}
-                      >
-                        {categoryList &&
-                          categoryList.map((option) => (
-                            <Select.Option key={option.text} value={option.value}>
-                              {option.text}
-                            </Select.Option>
-                          ))}
-                      </Select>
-                    </Form.Item>
-                    <Form.Item name="investedAmount" label="Invested Amount *">
-                      <Input
-                        placeholder="Invested Amount"
-                        name="investedAmount"
-                        onChange={(e) => handleChange('investedAmount', e.target.value)}
-                        style={{ width: '100%' }}
-                      />
-                    </Form.Item>
-
-                    <div className="col-lg-12 mt-5 mb-15">
-                      <div className={`${style.item} mb-xl-0 mb-15`}>
-                        <span className={style.title}>
-                          Token Price (usd) : &nbsp;&nbsp;&nbsp;&nbsp;
-                        </span>
-                        <span className={style.title}>{quote} </span>
-                      </div>
-                    </div>
-                    <Button type="submit" className="btn btn-info px-5" onClick={() => saveData()}>
-                      Buy Token
-                    </Button>
-                  </Form>
-                </div>
-              </ModalBody>
-            </Modal>
           </div>
         </div>
       </div>

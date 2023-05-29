@@ -9,7 +9,7 @@ const Footer = ({ settings: { logo, version } }) => {
     <div className={style.footer}>
       <div className={style.footerInner}>
         <a
-          href="https://papertrader.com"
+          href="https://JooTracker.com"
           target="_blank"
           rel="noopener noreferrer"
           className={style.logo}
@@ -48,11 +48,11 @@ const Footer = ({ settings: { logo, version } }) => {
         <p className="mb-0">Release Version {version}</p>
         <p className="mb-0">
           Copyright © {new Date().getFullYear()}{' '}
-          <a href="https://papertrader.com" target="_blank" rel="noopener noreferrer">
-            papertrader.com
+          <a href="https://JooTracker.com" target="_blank" rel="noopener noreferrer">
+            JooTracker.com
           </a>
           {' | '}
-          <a href="https://papertrader.com/privacy" target="_blank" rel="noopener noreferrer">
+          <a href="https://JooTracker.com/privacy" target="_blank" rel="noopener noreferrer">
             Privacy Policy
           </a>
         </p>
