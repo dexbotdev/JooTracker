@@ -18,7 +18,7 @@ const Tokenmanagement = () => {
   const MyTrades = Parse.Object.extend('TokenTracker')
 
   const parseQuery = new Parse.Query('TokenTracker')
-  const { results } = useParseQuery(parseQuery)
+   const { results } = useParseQuery(parseQuery)
 
   const [pairs, setPairs] = useState([])
   const [tradesData, setTradesData] = useState([])
@@ -28,6 +28,9 @@ const Tokenmanagement = () => {
 
   const [mytrades, setMytrades] = useState([])
 
+  const dexlink = (record) => { 
+    return `https://dexscreener.com/ethereum/${record.pairAddress}`;
+  }
   const colorbadge = (record) => {
     if (record.networkName === 'ethereum') return 'info'
 
@@ -71,16 +74,26 @@ const Tokenmanagement = () => {
       key: 'tokenSymbol',
       render: (text, record) => (
         <span>
-          <Badge color={colorbadge(record)} size="lg" style={{ fontWeight: 'bolder' }}>
-            {record.tokenSymbol}
+        <Badge color={colorbadge(record)} size="lg" style={{ fontWeight: 'bolder' }}>
+          {record.tokenSymbol}
+        </Badge><br/>
+          <Badge color='info' size="xs" style={{ fontWeight: 'bolder',color:"#ffffff" }}>
+            <a href={dexlink(record)} style={{ fontWeight: 'bolder',color:"#ffffff" }} target='blank'>{record.tokenAddress}</a>
           </Badge>
         </span>
       ),
     },
     {
-      title: 'Marketcap',
+      title: 'Marketcap ( USDT)',
       dataIndex: 'currmarketcap',
       key: 'currmarketcap',
+      render: (text, record) => (
+        <span>
+        <Badge color={colorbadge(record)} size="sm" style={{ fontWeight: 'bolder' }}>
+          {record.currmarketcap}
+        </Badge> 
+        </span>
+      ),
     },
     {
       title: 'Statistics',
@@ -90,8 +103,14 @@ const Tokenmanagement = () => {
         <span>
           <div className="col-lg-12">
             <div className={`${style.item}`}>
-              <span className={style.title}>Launch Price (usd) : &nbsp;&nbsp;&nbsp;&nbsp;</span>
+              <span className={style.title}>Buy Price (usd) : &nbsp;&nbsp;&nbsp;&nbsp;</span>
               <span className={style.title}>{record.priceUsd} </span>
+            </div>
+          </div>
+          <div className="col-lg-12">
+            <div className={`${style.item}`}>
+              <span className={style.title}>Sell Price (usd) : &nbsp;&nbsp;&nbsp;&nbsp;</span>
+              <span className={style.title}>{record.sold ? record.sellPrice : '-'} </span>
             </div>
           </div>
           <div className="col-lg-12">
@@ -106,6 +125,12 @@ const Tokenmanagement = () => {
               <span className={style.title}>{calcProfit(record)} </span>
             </div>
           </div>
+          <div className="col-lg-12">
+            <div className={`${style.item}`}>
+              <span className={style.title}>After Sale profit (usd) : &nbsp;&nbsp;&nbsp;&nbsp;</span>
+              <span className={style.title}>{calcProfitX(record)} </span>
+            </div>
+          </div>
         </span>
       ),
     },
@@ -113,30 +138,71 @@ const Tokenmanagement = () => {
       title: 'Action',
       render: (record) => (
         <span>
-          <Button
-            type="submit"
-            onClick={() => deleteTrade(record)}
-            className="btn btn-danger btn-sm"
-          >
-            <small>
-              <i className="fe fe-trash mr-2" />
-            </small>
-            Delete
-          </Button>
-        </span>
+        <Button
+          type="submit"
+          onClick={() => sellToken(record)}
+          className="btn btn-danger btn-sm"
+          disabled={record.sold}
+        >
+          <small>
+            <i className="fe fe-trash mr-2" />
+          </small>
+          Sell
+        </Button>
+        <Button
+          type="submit"
+          onClick={() => deleteTrade(record)}
+          className="btn btn-danger btn-sm"
+        >
+          <small>
+            <i className="fe fe-trash mr-2" />
+          </small>
+          Delete
+        </Button>
+      </span>
       ),
     },
   ]
 
-  const deleteTrade = (record) => {
-    const tradeUpdate = new MyTrades()
-    tradeUpdate.set('objectId', record.objectId)
-    tradeUpdate.destroy().then(
-      async (myObject) => {
+  const deleteTrade = async (record) => {
+    await axios
+      .get(`https://api.dexscreener.com/latest/dex/search?q=${record.pairAddress}`)
+      .then((response) => {
+        const price = response.data.pairs[0].priceUsd
+
+        const tradeUpdate = new MyTrades()
+        tradeUpdate.set('objectId', record.objectId) 
+
+        tradeUpdate.set('sold', false)
+        tradeUpdate.set('track', false)
+        tradeUpdate.save()
+      })
+      .then(async () => {
         await getPairsF()
-      },
-      (error) => {},
-    )
+      })
+  }
+  const sellToken = async (record) => {
+    await axios
+      .get(`https://api.dexscreener.com/latest/dex/search?q=${record.pairAddress}`)
+      .then((response) => {
+        const price = response.data.pairs[0].priceUsd
+
+        const tradeUpdate = new MyTrades()
+        tradeUpdate.set('objectId', record.objectId) 
+
+        tradeUpdate.set('sold', true)
+        tradeUpdate.set('sellPrice', price)
+        tradeUpdate.save()
+      })
+      .then(async () => {
+        await getPairsF()
+      })
+  }
+
+  const calcProfitX = (record) => {
+    return record.sold === true
+      ? `${Number((100 * (record.sellPrice - record.priceUsd)) / record.priceUsd).toFixed(2)} %`
+      : 'Not Sold'
   }
 
   const calcProfit = (record) => {
@@ -158,12 +224,12 @@ const Tokenmanagement = () => {
 
   const getPairsF = async () => {
     const trades = []
-
+    const results = await parseQuery.findAll()
     if (results)
       for (let i = 0; i < results.length; i++) {
         const pairConfig = results[i]
 
-        console.log(pairConfig.id)
+        console.log(pairConfig.get('track')+":"+pairConfig.get('tokenName'))
 
         const myTrade = results[i].toJSON()
 

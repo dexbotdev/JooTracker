@@ -70,9 +70,9 @@ const SearchAndAddPairs = () => {
       key: 'chainId',
       render: (text, record) => (
         <span>
-          <Badge color={colorbadge(record)} style={{ fontWeight: 'bolder' }}>
-            {record.chainId}
-          </Badge>
+        <Badge color={colorbadge(record)} style={{ fontWeight: 'bolder' }}>
+          {record.chainId}
+        </Badge>
         </span>
       ),
     },
